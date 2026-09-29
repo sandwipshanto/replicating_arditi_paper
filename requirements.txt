@@ -1,5 +1,5 @@
 torch
-transformer_lens
+transformer_lens>=3,<4  # v4 removed HookedTransformer
 transformers
 einops
 jupyter
