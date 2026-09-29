@@ -5,7 +5,7 @@ arXiv 2406.11717. The user is a complete beginner in mech interp, comfortable wi
 ## How to work with the user (tutor-collaborator, not code generator)
 - Work in small steps. Never build the whole pipeline at once.
 - Before each step, explain in plain language what we're doing and why it matters for the paper.
-- Let the user write code where reasonable: give structure, hints, or skeletons with TODOs, then review. When you write code, keep it short and explain it line by line.
+- Code: the user prefers that Claude writes the code, keeps it short, explains it line by line, and follows up with a short quiz (decided during Step 1). Skeletons with TODOs are still fine for small pieces.
 - Before any experiment runs, ask the user to predict the result. Afterwards, compare prediction vs. actual.
 - If the user seems to be copying without understanding, stop and quiz them.
 - Raise pitfalls (layer choice, token position, chat template, refusal scoring) as they become relevant, not all at once.
