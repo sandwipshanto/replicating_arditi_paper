@@ -16,11 +16,12 @@ arXiv 2406.11717. The user is a complete beginner in mech interp, comfortable wi
 
 ## Roadmap
 1. Load the model, run a harmful and a harmless prompt, inspect outputs and residual stream activations.
-2. Build small harmful/harmless prompt sets and collect activations.
-3. Compute the difference-in-means refusal direction; pick a layer and token position.
-4. Ablate the direction and measure the refusal rate; add it to harmless prompts and measure induced refusal.
-5. Break it on purpose: wrong layer, fewer prompts, random direction.
-6. Compare with the paper and its public code; explain any differences.
+2. Build harmful/harmless prompt sets and collect activations. Use the paper's splits (from the repo): harmful train 128 (AdvBench/MaliciousInstruct/TDC2023), harmful val 32 (HarmBench), harmless train/val from Alpaca, eval on JailbreakBench (100) plus 100 held-out Alpaca. Filter train/val to harmful prompts the model refuses and harmless prompts it doesn't. Eval must not overlap with train/val.
+3. Compute difference-in-means directions at every layer x post-instruction token position (template tokens after the instruction). Select one using the val set: minimize bypass score, subject to induce score > 0, KL < 0.1 on harmless, and layer < 0.8 x n_layers. The selection metric is refusal-token log-odds at the last position.
+4. Ablate the direction at ALL layers and ALL positions (x - r̂r̂ᵀx), measure the refusal rate on eval (substring matching; Llama Guard 2 optional via Colab). Add the direction at ONLY the extraction layer, all positions, on harmless prompts; measure induced refusal. Check coherence (KL, read outputs).
+5. Break it on purpose: wrong layer, fewer prompts, random direction (random baseline is our addition, not in the paper).
+6. Compare with the paper and its public code (github.com/andyrdt/refusal_direction); explain differences (e.g. paper used Qwen 1 1.8B, we use Qwen2.5-1.5B).
+- Optional stretch: weight orthogonalization plus capability evals (§4); adversarial suffix analysis (§5).
 
 **Current progress:** see the latest entry in `research_log.md`. That is the source of truth for where we are.
 
