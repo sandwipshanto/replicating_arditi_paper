@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+# large activation dumps; keep small CSV/JSON results
+results/**/*.pt
+results/**/*.npy
