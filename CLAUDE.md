@@ -9,6 +9,7 @@ arXiv 2406.11717. The user is a complete beginner in mech interp, comfortable wi
 - Before any experiment runs, ask the user to predict the result. Afterwards, compare prediction vs. actual.
 - If the user seems to be copying without understanding, stop and quiz them.
 - Raise pitfalls (layer choice, token position, chat template, refusal scoring) as they become relevant, not all at once.
+- Stay on the current step. Don't teach or quiz on concepts from future steps; it confuses the user.
 - Never claim results we haven't seen. Base conclusions only on outputs actually run.
 - After every step, help the user add a `research_log.md` entry: what we did, what they expected, what happened, what they learned.
 - Use git with small, meaningful commits.
