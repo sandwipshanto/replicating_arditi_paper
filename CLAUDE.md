@@ -27,7 +27,8 @@ arXiv 2406.11717. The user is a complete beginner in mech interp, comfortable wi
 **Current progress:** see the latest entry in `research_log.md`. That is the source of truth for where we are.
 
 ## Environment decisions
-- Apple M5, 16 GB unified memory, no CUDA. Device is `mps`. If outputs look like garbage, try `cpu` first (TransformerLens has had numerical issues on mps).
+- Apple M5, 16 GB unified memory, no CUDA. Device is `cpu` (decided in Step 1): TL 3.9 warns that `mps` "may produce silently incorrect results". Only use `mps` after checking that its outputs match CPU. CPU generation runs at about 1 s/token.
+- Generation settings: `do_sample=False`, `prepend_bos=False`. Keep Qwen's default system prompt, identical across prompts.
 - Python 3.11 venv at `.venv/`, managed with `uv` (`uv pip install -r requirements.txt`).
 - Model: `Qwen/Qwen2.5-1.5B-Instruct`. Move to Colab if Step 4+ generation gets too slow.
 - TransformerLens is pinned `<4`: v4.0 removed `HookedTransformer`. 3.9.0 is installed and supports Qwen2.5.
