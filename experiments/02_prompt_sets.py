@@ -135,3 +135,28 @@ for instr in spot:
     print(f"### {instr}\n{out.split('assistant')[-1].strip()}\n")
 
 # %%
+# 2c: collect residual-stream activations at the post-instruction tokens, for the filtered train prompts.
+POST_INST = model.to_tokens("<|im_end|>\n<|im_start|>assistant\n", prepend_bos=False)[0]  # template after the instruction
+N_POS = len(POST_INST)
+print("post-instruction tokens:", model.to_str_tokens(POST_INST))
+
+@torch.no_grad()
+def collect(instructions: list[str]) -> torch.Tensor:
+    acts = []
+    for instr in instructions:
+        tokens = model.to_tokens(format_chat(instr), prepend_bos=False)
+        assert torch.equal(tokens[0, -N_POS:], POST_INST), instr  # every prompt must end with the same template tokens
+        _, cache = model.run_with_cache(tokens, names_filter=lambda name: name.endswith("resid_pre"))
+        acts.append(torch.stack([cache["resid_pre", l][0, -N_POS:] for l in range(model.cfg.n_layers)]))
+    return torch.stack(acts)
+
+# %%
+acts_harmful = collect(load("harmful_train_filtered"))
+acts_harmless = collect(load("harmless_train_filtered"))
+print("harmful:", acts_harmful.shape, " harmless:", acts_harmless.shape)
+
+RESULTS = DATA.parent / "results"
+RESULTS.mkdir(exist_ok=True)
+torch.save({"harmful": acts_harmful, "harmless": acts_harmless}, RESULTS / "train_acts.pt")
+
+# %%
