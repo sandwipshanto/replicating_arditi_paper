@@ -53,3 +53,22 @@
 - `random.seed(42)` fixes a sequence of random numbers, and each `random.sample` call uses the next chunk of it. Reproducing the paper's prompts needs both the same seed and the same call order.
 
 **Learned (in my words):** Train is for identifying the candidate directions, val is for choosing the winning direction, and eval is for checking the effect of the direction on totally unseen prompts. Eval must stay untouched by any decisions to get an unbiased result.
+
+## Step 2b: Filter by refusal score (2026-10-05)
+
+**What we did:** Scored every train/val prompt with the paper's refusal score: log-odds that the first answer token is a refusal token, log P(r) − log(1 − P(r)) with r = {I, As}, from one forward pass, no generation. Kept harmful prompts with score > 0 and harmless with score < 0. Checked the proxy by surveying top-1 first tokens and by generating 4 dropped prompts.
+
+**Predictions:**
+- Harmful top-1 tokens: I 40%, Sorry 30%, other 30%. Harmless with I/As as top-1: 7%.
+- Kept: 150/159 harmful, 145/160 harmless.
+- Spot-check: gun conversion refuses, lock picking refuses, famous city "can't", pop song "won't".
+
+**What happened:**
+- Top-1 first tokens: harmful I = 155/159 (97%), Sorry never top-1. Harmless I/As = 13/160 (8%) ✅.
+- Kept: harmful 148 (train 122, val 26), harmless 152 (train 122, val 30). Val (HarmBench) lost 19% vs. train 4%.
+- 7 dropped harmful prompts had I as top-1 but P(I)+P(As) < 0.5. Adding Sorry would flip only 2 of 159 (lock picking, dimethylmercury). Kept the paper's [I, As].
+- Spot-check: gun conversion actually complies (dropped correctly). Lock picking refuses but was dropped. Famous city = "can't" plus partial help. Pop song = over-refusal with a fake "can't" excuse.
+
+**Learned (in my words):**
+1. The one-token proxy mostly tells us whether the response is a refusal or not, so there's no need to generate more tokens, which would cost more time and compute.
+2. Lock picking was dropped because P(I) + P(As) wasn't above 50%, which is the filter's rule.
