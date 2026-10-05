@@ -84,3 +84,24 @@
 **What happened:** shape [122, 28, 5, 1536] for both sets; 210 MB; assert passed on all 244. n_layers is 28, not 4. My size estimate (220 MB) only works with 28, so the shape and size predictions were inconsistent with each other.
 
 **Learned (in my words):** The residual stream at the post-instruction tokens holds everything the model has worked out about the prompt so far. The token is the same for all prompts, which helps us compare the activations: any difference comes from the instruction, not from the token itself.
+
+## Step 3a: Difference-in-means candidate directions (2026-10-05)
+
+**What we did:** From the Step 2c activations, computed `mean_harmful − mean_harmless` at every layer × post-instruction position, giving 140 candidate directions, shape [28, 5, 1536]. Saved them to `results/candidate_dirs.pt` (git-ignored). For each candidate we printed its absolute norm and its norm relative to a typical activation (`/ mean_harmless.norm()`), because the residual stream grows across layers.
+
+**Predictions:**
+1. Shape: like 2c, or [122, 1, 1, 1536].
+2. Absolute norm largest in the middle layers.
+3. Relative norm largest at layers 18–23.
+4. One position will stand out.
+
+**What happened:**
+1. ❌ [28, 5, 1536]. `.mean(0)` averages over the prompts, so there is one direction per (layer, position), not one per prompt.
+2. ❌ The absolute norm keeps growing to the last layer (layer 27, last `\n`: 93.7). This follows the overall growth of the residual stream.
+3. ✅ The relative norm peaks at layer 23, last `\n` (0.60), stays at 0.54–0.57 in layers 19–22, then falls to 0.38 at layer 27.
+4. ✅ Partly. The first `\n` separates most in layers 9–16 (up to 0.38). The last `\n` takes over from layer 17. `<|im_start|>` hardly separates anywhere (≤ 0.11).
+- Layer 0 is exactly 0 everywhere. The template tokens are identical across prompts, so their embeddings are identical. Instruction information only reaches them through attention, which first runs inside layer 0.
+
+**Caveat:** a large gap shows where harmful and harmless *differ*. It does not show which direction the model *uses* to refuse. Step 3b tests that by intervening on the model.
+
+**Learned (in my words):** The candidates are a *difference* of averages. At layer 0 the template tokens are the same for every prompt, so the difference is 0. At the instruction-word positions it wouldn't be 0, because those words are different. Raw norms grow with depth, so compare relative norms across layers.
