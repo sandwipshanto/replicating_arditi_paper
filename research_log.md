@@ -72,3 +72,15 @@
 **Learned (in my words):**
 1. The one-token proxy mostly tells us whether the response is a refusal or not, so there's no need to generate more tokens, which would cost more time and compute.
 2. Lock picking was dropped because P(I) + P(As) wasn't above 50%, which is the filter's rule.
+
+## Step 2c: Collect activations (2026-10-05)
+
+**What we did:** Ran the 122 harmful + 122 harmless filtered train prompts through the model and saved `resid_pre` (residual stream entering each layer) at all 28 layers and the 5 post-instruction template tokens (`<|im_end|>`, `\n`, `<|im_start|>`, `assistant`, `\n`), to `results/train_acts.pt` (git-ignored, regenerate with the script). Asserted that every prompt ends in those exact 5 tokens.
+
+**Why these positions:** the model has read the whole instruction but not started answering, and every prompt has the same tokens there, so position k means the same thing across prompts.
+
+**Predictions:** shape [122, 4, 5, 1536]; ~220 MB; assert won't fail (special tokens can't merge with instruction text).
+
+**What happened:** shape [122, 28, 5, 1536] for both sets; 210 MB; assert passed on all 244. n_layers is 28, not 4. My size estimate (220 MB) only works with 28, so the shape and size predictions were inconsistent with each other.
+
+**Learned (in my words):** The residual stream at the post-instruction tokens holds everything the model has worked out about the prompt so far. The token is the same for all prompts, which helps us compare the activations: any difference comes from the instruction, not from the token itself.
