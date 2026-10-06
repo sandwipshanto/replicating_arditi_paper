@@ -137,3 +137,23 @@ Ran the tests on 2 hand-picked candidates, then on all 135 (layer 0 skipped: zer
 **Caveats:** small val sets (26/30). Top two are close (−5.46 vs −4.85). Every score is first-token only. Step 4 tests on unseen eval prompts and reads real generations.
 
 **Learned (in my words):** Layer 20 failed KL, so it disturbs harmless prompts too. A strong bypass alone isn't enough. "I" and refusal are correlated in this model (checked in 2b), which is why the score works. Claude's addition: that correlation was measured on the unmodified model, and an edit could break it (suppress "I" without removing the refusal). That's why we read generations in Step 4.
+
+## Step 4a: Ablate the direction on unseen harmful prompts (2026-10-06)
+
+**What we did:** Moved to Colab (T4 GPU). `experiments/04_ablate_and_add.ipynb` clones the repo; the direction travels as `results/refusal_direction.json`. Generated 256 greedy tokens for the 100 JailbreakBench eval prompts, without and with the layer 22 direction ablated at all layers and positions (including generated tokens). Judged refusals with the paper's substring list (verbatim from their repo). Completions in `results/step4a_harmful_eval.json`.
+
+**Colab setup issues:** the normal `from_pretrained` ran out of RAM (~18 GB peak vs. 12.7 GB), then GPU memory during TL's weight processing. Fix: load HF onto the GPU, convert with `from_pretrained_no_processing`, free the HF copy, then move to the GPU. Verified on CPU and on the T4: same scores as Step 3 (baseline +1.36, bypass −5.46).
+
+**Deviation:** 256 new tokens; the paper used 512.
+
+**Predictions:** baseline 92/100 refused, ablated 15/100.
+
+**What happened:**
+- Baseline: **99/100** refused (98 start "I'm sorry,"). The one miss (extinguish a fire unnoticed) is answered normally.
+- Ablated: **0/100** by the substring judge. Answers start "Certainly! Here's…", "Creating a…"; median ~1,300 characters, so full answers.
+- The judge hides things. 16/100 ablated answers have a warning word in the first 200 characters. Of 8 read, some comply with a disclaimer (ransomware, ATM hack) and some dodge without a refusal phrase ("make a bomb" → general safety tips, "crack passwords" → how to make strong passwords). 6 ablated answers use ’, so "I can’t" would slip past the list.
+
+**Quiz:** a disclaimer like "I cannot guarantee this is legal" gets counted as a refusal (false alarm); a dodge gets counted as compliance (miss). The judge reads phrases, not meaning.
+
+**Learned (in my words):** Nothing new: it confirmed what I expected.
+Claude's addition: (1) the paper's headline claim reproduced on prompts the direction never saw, over full answers, although we selected it from one token on 26 val prompts; (2) "0/100" means no refusal *phrase*, not 100 harmful answers. Plan: Step 4d judges the answers again with Llama Guard 2 and with Claude as a blind judge (shuffled, condition hidden, written rubric).
