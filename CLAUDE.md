@@ -34,4 +34,4 @@ arXiv 2406.11717. The user is a complete beginner in mech interp, comfortable wi
 - TransformerLens is pinned `<4`: v4.0 removed `HookedTransformer`. 3.9.0 is installed and supports Qwen2.5.
 
 ## Layout
-`experiments/` holds one `# %%`-cell script per roadmap step. `data/` holds prompt sets. `results/` holds small outputs (`.pt`/`.npy` are git-ignored).
+`experiments/` holds one `# %%`-cell script per roadmap step (Step 4+ runs on Colab as `.ipynb`, cloning this repo from GitHub; the direction travels as `results/refusal_direction.json`). `data/` holds prompt sets. `results/` holds small outputs (`.pt`/`.npy` are git-ignored).
