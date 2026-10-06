@@ -105,3 +105,35 @@
 **Caveat:** a large gap shows where harmful and harmless *differ*. It does not show which direction the model *uses* to refuse. Step 3b tests that by intervening on the model.
 
 **Learned (in my words):** The candidates are a *difference* of averages. At layer 0 the template tokens are the same for every prompt, so the difference is 0. At the instruction-word positions it wouldn't be 0, because those words are different. Raw norms grow with depth, so compare relative norms across layers.
+
+## Step 3b + 3c: Test candidates by intervention, select the direction (2026-10-05/06)
+
+**What we did:** Built three tests, each a single batched forward pass on the filtered val prompts, scored with the Step 2b refusal score:
+- **Bypass:** ablate r̂ (`x − (x·r̂)r̂`) at all 28 layers (resid_pre, attn_out, mlp_out) on 26 harmful val prompts. Want low.
+- **Induce:** add the raw r once, at its origin layer, all positions, on 30 harmless val prompts. Want > 0.
+- **KL:** ablate r̂ on harmless val and compare the next-token distribution with the unmodified model. Want < 0.1.
+
+Ran the tests on 2 hand-picked candidates, then on all 135 (layer 0 skipped: zero vectors). Selected with the paper's rules: lowest bypass among candidates with layer < 0.8 × 28 = 22.4, induce > 0 and KL < 0.1. Batched (left padding) forward passes match one-at-a-time exactly and are ~7× faster. The sweep took ~31 min on CPU.
+
+**Baseline (no intervention):** harmful val +1.36 (≈80% P(I/As)), harmless val −5.20 (≈0.5%). Prediction ±3: the signs were guaranteed by the 2b filter, and the sizes were wrong in both directions.
+
+**Hand-picked candidates (last `\n`):**
+
+| | bypass | induce | KL |
+|---|---|---|---|
+| layer 3 | +1.11 | −5.12 | 0.058 |
+| layer 16 | −6.09 (26/26 below 0) | +1.27 | 0.483 |
+
+- Predicted layer 3 stays near the baseline ✅, layer 16 "drops a bit" ❌ (it collapsed below the harmless baseline).
+- Predicted layer 16 induces refusal ✅ and disturbs more ✅, but its KL is ~5× over the limit, so it fails.
+
+**Sweep + selection:**
+- Rules passed: layer 110/135, induce 24/135 (strictest, only layers ≥ 11), KL 56/135, all three **7/135** (predicted 1–5).
+- **Selected: layer 22, last `\n`**: bypass −5.46, induce +1.28, KL 0.037. Predicted "middle" ❌. It's late, the last layer the rule allows.
+- The 10 lowest bypass scores all fail. Layer 27 first `\n` (−17.98) has KL 13.8. Layer 20 last `\n` (−7.45, induce +1.36) fails KL (1.46).
+- Layer 23 last `\n` (−6.26) passes induce and KL and is excluded only by the layer rule, so the cut-off decided the winner.
+- 6 of 7 survivors are at the last `\n`.
+
+**Caveats:** small val sets (26/30). Top two are close (−5.46 vs −4.85). Every score is first-token only. Step 4 tests on unseen eval prompts and reads real generations.
+
+**Learned (in my words):** Layer 20 failed KL, so it disturbs harmless prompts too. A strong bypass alone isn't enough. "I" and refusal are correlated in this model (checked in 2b), which is why the score works. Claude's addition: that correlation was measured on the unmodified model, and an edit could break it (suppress "I" without removing the refusal). That's why we read generations in Step 4.
