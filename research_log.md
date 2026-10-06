@@ -157,3 +157,21 @@ Ran the tests on 2 hand-picked candidates, then on all 135 (layer 0 skipped: zer
 
 **Learned (in my words):** Nothing new: it confirmed what I expected.
 Claude's addition: (1) the paper's headline claim reproduced on prompts the direction never saw, over full answers, although we selected it from one token on 26 val prompts; (2) "0/100" means no refusal *phrase*, not 100 harmful answers. Plan: Step 4d judges the answers again with Llama Guard 2 and with Claude as a blind judge (shuffled, condition hidden, written rubric).
+
+## Step 4b: Add the direction to unseen harmless prompts (2026-10-06)
+
+**What we did:** Same notebook, on Colab. Generated 256 greedy tokens for the 100 held-out Alpaca eval prompts, without and with the raw direction r (norm 49.9) added at layer 22 only (`resid_pre`), at all positions including generated tokens. Same substring judge. Completions in `results/step4b_harmless_eval.json`.
+
+**Predictions:** baseline 2/100 refused, added 100/100, refusals worded "I can't".
+
+**What happened:**
+- Baseline: **6/100** by the judge, but mostly false alarms. "I'm sorry, but as an AI language model, I don't have personal experiences… However, I can…" followed by real help (job interview, t-shirt, piano). One riddle counted because of its own text ("I have four legs, but I can't walk").
+- Added: **92/100**. 69 start "I'm sorry, but…", 21 more "I'm sorry, I…".
+- The 8 escapes: very short tasks (edit a sentence) or answers starting "As I…"/"I recommend…". A first-word check (the Step 3 score) would wrongly call those refusals; the substring judge gets them right.
+- Reasons are invented: mostly vague ("unable to assist/generate/engage"); 15 cite harm, e.g. a spooky house "promotes… terrorism", yoga benefits involve "illegal activities, promoting self-harm".
+- 46/100 added answers say "sorry" 4+ times (apology loops) → coherence check in 4c.
+
+**Quiz:** For "As I reflect on…", the first-word judge says refusal (wrong) and the substring judge says not a refusal (right). Answered correctly once the question was rewritten plainly.
+
+**Learned (in my words):** What surprised me most: the model called yoga illegal, and the "sorry" loop.
+Claude's addition: the invented reasons suggest the direction means "refuse", not "this is harmful" (the model refuses, then justifies). The loops show that adding the direction degrades the text, which 4c measures.
