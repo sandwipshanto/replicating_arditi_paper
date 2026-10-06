@@ -175,3 +175,19 @@ Claude's addition: (1) the paper's headline claim reproduced on prompts the dire
 
 **Learned (in my words):** What surprised me most: the model called yoga illegal, and the "sorry" loop.
 Claude's addition: the invented reasons suggest the direction means "refuse", not "this is harmful" (the model refuses, then justifies). The loops show that adding the direction degrades the text, which 4c measures.
+
+## Step 4c: Coherence. Does removing the direction damage normal answers? (2026-10-06)
+
+**What we did:** On the 100 harmless eval prompts, with the direction ablated (all layers, all positions): (1) per-prompt KL of the first-token prediction vs. the normal model, (2) generated 256 tokens and compared with the 4b baseline answers. Results in `results/step4c_harmless_ablated.json`.
+
+**What happened:**
+- KL: median **0.014**, mean **0.075** (< 0.1, but higher than 0.037 on val in Step 3), max 1.88; 13/100 prompts > 0.1.
+- The biggest KL prompts are the ones where the normal model hedged ("I'm sorry, but as an AI language model, I can't… However…"): piano piece 1.88, iPhone review 0.74, job interview, career advice, t-shirt. Ablated, the model just helps ("Certainly! Here is a two-minute piano piece…"). "As an AI" appears in 5 normal answers, 0 ablated.
+- Refusals 6 → 1 (the remaining one is the riddle false alarm). No sorry loops. Median length ~960 → ~1,020 chars.
+- Only 9/100 answers are word-for-word identical (greedy: one early word changes the rest). The anthem prompt has KL 0.54, yet the same text.
+- Possible small cost: 14 ablated answers repeat a sentence, vs. 6 normal ones (e.g. a menu lists the same side dish twice). Not read in full.
+
+**Quiz:** Which edit changes the model more, adding (4b, sorry loops) or removing (4c, normal answers)? Answered: adding ✅. On harmless prompts the direction is mostly absent, so removing it takes away little; adding pushes by the full harmful−harmless gap (norm 49.9).
+
+**Learned (in my words):** Adding the direction changes the model more than removing it.
+Claude's addition: the largest changes from ablation are the hedges disappearing, which fits the direction being the "I shouldn't / I can't" signal, not general damage.
